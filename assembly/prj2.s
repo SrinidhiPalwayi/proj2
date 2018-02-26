@@ -37,21 +37,24 @@ vector0:
         .fill 0x00000000
         .fill 0x00000000            ! device ID 15
         ! end vector table
-    
+
 main:   lea $sp, stack              ! initialize the stack pointer
         lw $sp, 0($sp)              ! finish initialization
-                
+
                                     ! Install timer interrupt handlers into vector table
-        noop    ! FIX ME
-        
-        noop                        ! Don't forget to enable interrupts
-        
+        lea $s0, t1_handler   ! FIX ME
+        lea $s1, vector0
+        sw $s0, 1 ($s1)
+
+
+        EI                       ! Don't forget to enable interrupts
+
         lea $a0, BASE               ! load base for pow
         lw $a0, 0($a0)
-        
+
         lea $a1, EXP                ! load exp for pow
         lw $a1, 0($a1)
-        
+
         lea $at, POW                ! load address of pow
         jalr $at, $ra               ! run pow
 
@@ -71,11 +74,11 @@ POW:    addi $sp, $sp, -1           ! allocate space for old frame pointer
         skpe $a1, $zero             ! check if $a1 is zero
         goto CONT1
         goto RET1                   ! if the power is 0 return 1
-        
+
 CONT1:  skpe $a0, $zero
         goto CONT2
         goto RET0                   ! if the base is 0 return 0
-        
+
 CONT2:  addi $a1, $a1, -1           ! decrement the power
         lea $at, POW                ! load the address of POW
         addi $sp, $sp, -2           ! push 2 slots onto the stack
@@ -89,10 +92,10 @@ CONT2:  addi $a1, $a1, -1           ! decrement the power
         lw $ra, -1($fp)             ! load RA from the stack
         addi $sp, $sp, 2
         goto FIN                    ! return
-        
+
 RET1:   addi $v0, $zero, 1          ! return a value of 1
         goto FIN
-        
+
 RET0:   add $v0, $zero, $zero       ! return a value of 0
 
 FIN:    lw $fp, 0($fp)              ! restore old frame pointer
@@ -103,14 +106,34 @@ FIN:    lw $fp, 0($fp)              ! restore old frame pointer
 MULT:   add $v0, $zero, $zero       ! zero out return value
 AGAIN:  add $v0, $v0, $a0           ! multiply loop
         addi $a1, $a1, -1           ! a1 -= 1
-        
+
         skpe $a1, $zero             ! finished multiplying
         goto AGAIN                  ! loop again
-        
+
 DONE:   jalr $ra, $zero
 
 t1_handler:
-        noop        ! FIX ME in Part 1
+        addi $sp, $sp, -1       ! FIX ME in Part 1
+        sw $k0, 0($sp)
+        EI
+        addi $sp, $sp, -2
+        sw $s0, 1($sp)
+        sw $s1, 0($sp)
+
+        lea $s0, ticks1
+        lw $s1, 0($s0)
+        lw $s2, 0($s1)
+        addi $s2, $s2, 1
+        sw $s2, 0($s1)
+
+        lw $s0, 1($sp)
+        lw $s1, 0($sp)
+        addi $sp, $sp, 2
+
+        di
+        lw $k0, 0($sp)
+        addi $sp, $sp, 1
+        reti
 
 t2_handler:
         noop        ! FIX ME in Part 2
